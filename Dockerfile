@@ -1,5 +1,7 @@
 FROM teriyakigod/steamcmd:arm64
 
+USER root
+
 # Install prerequisites
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
@@ -17,8 +19,8 @@ ARG TML_VERSION
 # Create tModLoader user and drop root permissions
 ARG UID=1000
 ARG GID=1000
-RUN addgroup -g $GID tml \
- && adduser tml -u $UID -G tml -h /home/tml -D
+RUN groupadd --gid $GID tml \
+ && useradd --uid $UID --gid $GID --create-home --home-dir /home/tml --shell /bin/bash tml
 
 USER tml
 ENV USER tml
