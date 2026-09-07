@@ -8,6 +8,7 @@ RUN apt-get update \
 	 bash \
 	 curl \
 	 tmux \
+	 unzip \
 	 libstdc++6 \
 	 libgcc-s1 \
 	 libicu-dev \
