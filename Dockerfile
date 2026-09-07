@@ -1,4 +1,4 @@
-FROM steamcmd/steamcmd:alpine-3
+FROM teriyakigod/steamcmd:arm64
 
 # Install prerequisites
 RUN apk update \
@@ -25,8 +25,9 @@ ENV USER tml
 ENV HOME /home/tml
 WORKDIR $HOME
 
-# Adding Scripts to PATH
-ENV SCRIPTS_PATH="/home/tml/.local/share/Terraria/tModLoader/Scripts"
+# Keep runtime scripts outside the tModLoader data directory. The latter is
+# commonly bind-mounted or backed by a PVC and can hide files baked into the image.
+ENV SCRIPTS_PATH="/home/tml/scripts"
 ENV PATH="${SCRIPTS_PATH}:${PATH}"
 
 # Using Environment variables for server config by default. If you would like to use a serverconfig.txt file instead, uncomment the following variable or use it in your docker-compose.yml environment section.
@@ -62,8 +63,13 @@ RUN steamcmd +quit
 # directory as this file, comment out the above line and uncomment this line:
 COPY --chown=tml:tml manage-tModLoaderServer.sh .
 
+# Do not place these scripts under the tModLoader data directory: it is mounted
+# over at runtime and would otherwise hide the image's entrypoint.
+COPY --chown=tml:tml tModLoader/Scripts/ /home/tml/scripts/
+RUN chmod 755 /home/tml/scripts/*.sh /home/tml/scripts/inject
+
 RUN ./manage-tModLoaderServer.sh install-tml --github --tml-version $TML_VERSION
 
 EXPOSE 7777
 
-ENTRYPOINT [ "entrypoint.sh" ]
+ENTRYPOINT [ "/home/tml/scripts/entrypoint.sh" ]
