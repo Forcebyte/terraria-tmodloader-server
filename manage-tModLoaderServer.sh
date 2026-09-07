@@ -280,6 +280,11 @@ function install_workshop_mods {
 	done
 
 	eval "$steam_cmd +force_install_dir $folder +login anonymous $steamcmd_command +quit"
+	if [[ $? -ne 0 ]]; then
+		echo "SteamCMD failed while installing workshop mods" >&2
+		popd
+		return 1
+	fi
 
 	popd
 

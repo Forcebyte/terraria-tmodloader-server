@@ -34,8 +34,8 @@ RUN existing_group=$(getent group "$GID" | cut -d: -f1) \
 		fi
 
 # The ARM64 base image provides steamcmd.sh through FEXBash rather than a
-# steamcmd executable. Keep the command expected by the management script.
-RUN printf '%s\n' '#!/bin/sh' 'exec FEXBash /home/tml/Steam/steamcmd.sh "$@"' \
+# steamcmd executable. FEXBash expects to run from the Steam directory.
+RUN printf '%s\n' '#!/bin/sh' 'cd /home/tml/Steam || exit 1' 'exec FEXBash ./steamcmd.sh "$@"' \
 	> /usr/local/bin/steamcmd \
  && chmod 755 /usr/local/bin/steamcmd
 

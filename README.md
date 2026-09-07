@@ -109,6 +109,21 @@ services:
       - MOTD="Welcome to my tModLoader Server :)"
 ```
 
+For a Kubernetes or k3s deployment, run the container with the same numeric
+identity used when building the image and make the mounted volume group-writable:
+
+```yaml
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  fsGroupChangePolicy: OnRootMismatch
+```
+
+The data volume is mounted at `/home/tml/.local/share/Terraria/tModLoader`.
+Without `fsGroup` (or an equivalent init container), a PVC initialized as root
+can prevent tModLoader from writing `Mods/enabled.json`.
+
 - Launch the container. If you are using a command line interface (cli):  
   `docker-compose up -d`
 
