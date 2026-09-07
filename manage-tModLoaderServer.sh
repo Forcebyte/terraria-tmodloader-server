@@ -21,12 +21,22 @@ function try_make_link {
 	fi
 }
 
-# NOTE: There is seemingly no official documentation on this file but other more "official" software does this same check.
-# See: https://github.com/moby/moby/blob/v24.0.5/libnetwork/drivers/bridge/setup_bridgenetfiltering.go#L162-L165
+# Detect both Docker and Kubernetes/containerd containers. Kubernetes does not
+# guarantee that /.dockerenv is present, even though this script is still
+# running inside a container.
 function is_in_docker {
 	if [[ -f /.dockerenv ]]; then
 		return 0
 	fi
+
+	if [[ -f /run/.containerenv || -n "${KUBERNETES_SERVICE_HOST:-}" ]]; then
+		return 0
+	fi
+
+	if [[ -r /proc/1/cgroup ]] && grep -qaE 'docker|containerd|kubepods|libpod|podman' /proc/1/cgroup; then
+		return 0
+	fi
+
 	return 1
 }
 
