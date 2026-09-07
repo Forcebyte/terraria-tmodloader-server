@@ -65,6 +65,11 @@ ENV PRIORITY=""
 
 # ENV MODPATH="/home/tml/.local/share/Terraria/tModLoader/Mods/"
 
+# The ARM64 base image provides steamcmd.sh through FEXBash rather than a
+# steamcmd executable. Keep the command expected by the management script.
+RUN printf '%s\n' '#!/bin/sh' 'exec FEXBash /home/tml/Steam/steamcmd.sh "$@"' \
+	> /usr/local/bin/steamcmd \
+ && chmod 755 /usr/local/bin/steamcmd
 
 # Update SteamCMD and verify latest version
 RUN steamcmd +quit
