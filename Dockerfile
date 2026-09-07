@@ -85,7 +85,11 @@ COPY --chown=tml:tml manage-tModLoaderServer.sh .
 COPY --chown=tml:tml tModLoader/Scripts/ /home/tml/scripts/
 RUN chmod 755 /home/tml/scripts/*.sh /home/tml/scripts/inject
 
-RUN ./manage-tModLoaderServer.sh install-tml --github --tml-version $TML_VERSION
+RUN if [ -n "$TML_VERSION" ]; then \
+		./manage-tModLoaderServer.sh install-tml --github --tml-version "$TML_VERSION"; \
+	else \
+		./manage-tModLoaderServer.sh install-tml --github; \
+	fi
 
 EXPOSE 7777
 

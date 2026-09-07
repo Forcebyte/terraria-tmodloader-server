@@ -129,11 +129,10 @@ function get_version {
 		echo "v$(cat $folder/Mods/tmlversion.txt | sed -E "s/\.([0-9])\./\.0\1\./g")"
 	else
 		# Get the latest release if no other options are provided
-		local release_url="https://api.github.com/repos/tModLoader/tModLoader/releases/latest"
+		local release_url="https://github.com/tModLoader/tModLoader/releases/latest"
 		local latest_release
-		latest_release=$({
-			curl -s "$release_url" 2>/dev/null || wget -q -O- "$release_url";
-		} | grep '"tag_name":' | sort | tail -1 | sed -E 's/.*"([^"]+)".*/\1/') # Get latest release from github's api
+		latest_release=$(curl -fsSL -o /dev/null -w '%{url_effective}' "$release_url" 2>/dev/null \
+			| sed 's#.*/tag/##')
 		echo "$latest_release" # So functions calling this can consume the result since you can't return strings in bash :)
 	fi
 }
@@ -141,10 +140,14 @@ function get_version {
 # Takes version number as first parameter
 function download_release {
 	local down_url="https://github.com/tModLoader/tModLoader/releases/download/$1/tModLoader.zip"
+	if [[ -z "$1" ]]; then
+		echo "Unable to determine a tModLoader release version" >&2
+		exit 1
+	fi
 	echo "Downloading version $1"
-	curl -s -LJO "$down_url" 2>/dev/null || wget -q --content-disposition "$down_url"
+	curl -fsSL "$down_url" -o tModLoader.zip
 	echo "Unzipping tModLoader.zip"
-	unzip -q tModLoader.zip
+	unzip -q tModLoader.zip || exit 1
 	rm tModLoader.zip
 	echo "$1" > .ver
 }
