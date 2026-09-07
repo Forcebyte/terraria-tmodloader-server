@@ -32,9 +32,18 @@ RUN existing_group=$(getent group "$GID" | cut -d: -f1) \
 			usermod --login tml --uid "$UID" --gid tml --home /home/tml --move-home "$existing_user"; \
 		fi
 
+# The ARM64 base image provides steamcmd.sh through FEXBash rather than a
+# steamcmd executable. Keep the command expected by the management script.
+RUN printf '%s\n' '#!/bin/sh' 'exec FEXBash /home/tml/Steam/steamcmd.sh "$@"' \
+	> /usr/local/bin/steamcmd \
+ && chmod 755 /usr/local/bin/steamcmd
+
+# Update SteamCMD and verify latest version
+RUN steamcmd +quit
+
 USER tml
-ENV USER tml
-ENV HOME /home/tml
+ENV USER=tml
+ENV HOME=/home/tml
 WORKDIR $HOME
 
 # Keep runtime scripts outside the tModLoader data directory. The latter is
@@ -64,15 +73,6 @@ ENV NPCSTREAM="1"
 ENV PRIORITY=""
 
 # ENV MODPATH="/home/tml/.local/share/Terraria/tModLoader/Mods/"
-
-# The ARM64 base image provides steamcmd.sh through FEXBash rather than a
-# steamcmd executable. Keep the command expected by the management script.
-RUN printf '%s\n' '#!/bin/sh' 'exec FEXBash /home/tml/Steam/steamcmd.sh "$@"' \
-	> /usr/local/bin/steamcmd \
- && chmod 755 /usr/local/bin/steamcmd
-
-# Update SteamCMD and verify latest version
-RUN steamcmd +quit
 
 # ADD --chown=tml:tml https://raw.githubusercontent.com/tModLoader/tModLoader/1.4.4/patches/tModLoader/Terraria/release_extras/DedicatedServerUtils/manage-tModLoaderServer.sh .
 
