@@ -1,15 +1,15 @@
 FROM teriyakigod/steamcmd:arm64
 
 # Install prerequisites
-RUN apk update \
- && apk add --no-cache bash curl tmux libstdc++ libgcc icu-libs bash tmux \
- && rm -rf /var/cache/apk/*
-
-# Fix 32 and 64 bit library conflicts
-RUN mkdir /steamlib \
- && mv /lib/libstdc++.so.6 /steamlib \
- && mv /lib/libgcc_s.so.1 /steamlib
-ENV LD_LIBRARY_PATH /steamlib
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+	 bash \
+	 curl \
+	 tmux \
+	 libstdc++6 \
+	 libgcc-s1 \
+	 libicu-dev \
+ && rm -rf /var/lib/apt/lists/*
 
 # Set a specific tModLoader version, defaults to the latest Github release
 ARG TML_VERSION
