@@ -41,10 +41,9 @@ RUN printf '%s\n' '#!/bin/sh' 'exec FEXBash /home/tml/Steam/steamcmd.sh "$@"' \
 USER tml
 ENV USER=tml
 ENV HOME=/home/tml
+# FEX uses this x86-64 root filesystem for SteamCMD on ARM64.
+ENV FEX_ROOTFS=/home/tml/.fex-emu/RootFS/Ubuntu_22_04
 WORKDIR $HOME
-
-# Update SteamCMD and verify latest version
-RUN steamcmd +quit
 
 # Keep runtime scripts outside the tModLoader data directory. The latter is
 # commonly bind-mounted or backed by a PVC and can hide files baked into the image.
