@@ -19,8 +19,18 @@ ARG TML_VERSION
 # Create tModLoader user and drop root permissions
 ARG UID=1000
 ARG GID=1000
-RUN groupadd --gid $GID tml \
- && useradd --uid $UID --gid $GID --create-home --home-dir /home/tml --shell /bin/bash tml
+RUN existing_group=$(getent group "$GID" | cut -d: -f1) \
+ && if [ -z "$existing_group" ]; then \
+			groupadd --gid "$GID" tml; \
+		elif [ "$existing_group" != "tml" ]; then \
+			groupmod --new-name tml "$existing_group"; \
+		fi \
+ && existing_user=$(getent passwd "$UID" | cut -d: -f1) \
+ && if [ -z "$existing_user" ]; then \
+			useradd --uid "$UID" --gid tml --create-home --home-dir /home/tml --shell /bin/bash tml; \
+		elif [ "$existing_user" != "tml" ]; then \
+			usermod --login tml --uid "$UID" --gid tml --home /home/tml --move-home "$existing_user"; \
+		fi
 
 USER tml
 ENV USER tml
