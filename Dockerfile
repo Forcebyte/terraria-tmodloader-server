@@ -38,13 +38,13 @@ RUN printf '%s\n' '#!/bin/sh' 'exec FEXBash /home/tml/Steam/steamcmd.sh "$@"' \
 	> /usr/local/bin/steamcmd \
  && chmod 755 /usr/local/bin/steamcmd
 
-# Update SteamCMD and verify latest version
-RUN steamcmd +quit
-
 USER tml
 ENV USER=tml
 ENV HOME=/home/tml
 WORKDIR $HOME
+
+# Update SteamCMD and verify latest version
+RUN steamcmd +quit
 
 # Keep runtime scripts outside the tModLoader data directory. The latter is
 # commonly bind-mounted or backed by a PVC and can hide files baked into the image.
