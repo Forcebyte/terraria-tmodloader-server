@@ -436,7 +436,17 @@ case $cmd in
 
 		cd "$folder/server" || exit
 		chmod u+x start-tModLoaderServer.sh
-		exec ./start-tModLoaderServer.sh -config "$folder/serverconfig.txt" -nosteam -tmlsavedirectory "$folder" "$start_args"
+		# The tModLoader launcher starts dotnet as its child. Run it in its own
+		# process group so Kubernetes termination can trigger a graceful save.
+		setsid ./start-tModLoaderServer.sh -config "$folder/serverconfig.txt" -nosteam -tmlsavedirectory "$folder" "$start_args" &
+		server_pid=$!
+		function stop_server {
+			kill -INT -- "-$server_pid" 2>/dev/null || kill -INT "$server_pid" 2>/dev/null
+			wait "$server_pid"
+			exit $?
+		}
+		trap stop_server TERM INT
+		wait "$server_pid"
 		;;
 	*)
 		echo "Invalid Command: $1"
