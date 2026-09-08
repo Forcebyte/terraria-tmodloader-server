@@ -33,17 +33,19 @@ RUN existing_group=$(getent group "$GID" | cut -d: -f1) \
 			usermod --login tml --uid "$UID" --gid tml --home /home/tml --move-home "$existing_user"; \
 		fi
 
-# The ARM64 base image provides steamcmd.sh through FEXBash rather than a
-# steamcmd executable. FEXBash expects to run from the Steam directory.
-RUN printf '%s\n' '#!/bin/sh' 'cd /home/tml/Steam || exit 1' 'exec FEXBash ./steamcmd.sh "$@"' \
+# The ARM64 base image provides SteamCMD through FEXBash under /home/steam.
+# Make the base image's Steam files readable by the runtime user.
+RUN chmod 755 /home/steam /home/steam/Steam /home/steam/.fex-emu \
+ /home/steam/.fex-emu/RootFS /home/steam/.fex-emu/RootFS/Ubuntu_22_04 \
+ && printf '%s\n' '#!/bin/sh' 'cd /home/steam/Steam || exit 1' 'HOME=/home/steam exec FEXBash ./steamcmd.sh "$@"' \
 	> /usr/local/bin/steamcmd \
  && chmod 755 /usr/local/bin/steamcmd
 
 USER tml
 ENV USER=tml
 ENV HOME=/home/tml
-# FEX uses this x86-64 root filesystem for SteamCMD on ARM64.
-ENV FEX_ROOTFS=/home/tml/.fex-emu/RootFS/Ubuntu_22_04
+# FEX uses the root filesystem supplied by the ARM64 base image.
+ENV FEX_ROOTFS=/home/steam/.fex-emu/RootFS/Ubuntu_22_04
 WORKDIR $HOME
 
 # Keep runtime scripts outside the tModLoader data directory. The latter is

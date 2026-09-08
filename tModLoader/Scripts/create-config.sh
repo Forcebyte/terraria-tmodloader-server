@@ -21,7 +21,7 @@ if [[ -z ${USE_CONFIG_FILE} ]]; then
     echo "port=${PORT}" >> ${configFile}
     echo "password=${PASSWORD}" >> ${configFile}
     echo "motd=$MOTD" >> ${configFile}
-    echo "worldpath=${WORLDPATH}" >> serverconfig.txt
+    echo "worldpath=${WORLDPATH}" >> ${configFile}
     if [[ -z "${BANLIST}" || "${BANLIST}" == "banlist.txt" ]]; then
         touch banlist.txt
     fi

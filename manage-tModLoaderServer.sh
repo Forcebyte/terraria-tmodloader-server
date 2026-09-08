@@ -436,7 +436,7 @@ case $cmd in
 
 		cd "$folder/server" || exit
 		chmod u+x start-tModLoaderServer.sh
-		./start-tModLoaderServer.sh -config "$folder/serverconfig.txt" -nosteam -tmlsavedirectory "$folder" "$start_args"
+		exec ./start-tModLoaderServer.sh -config "$folder/serverconfig.txt" -nosteam -tmlsavedirectory "$folder" "$start_args"
 		;;
 	*)
 		echo "Invalid Command: $1"
