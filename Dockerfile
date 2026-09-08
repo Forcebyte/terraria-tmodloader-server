@@ -33,13 +33,13 @@ RUN existing_group=$(getent group "$GID" | cut -d: -f1) \
 		fi
 
 # The ARM64 base image provides SteamCMD through FEXBash under /home/steam.
-# SteamCMD updates its own files, so expose that tree through the runtime user's
-# home and give the runtime user ownership of the mutable Steam files.
-RUN ln -s /home/steam/Steam /home/tml/Steam \
- && ln -s /home/steam/.fex-emu /home/tml/.fex-emu \
- && chown -R tml:tml /home/steam/Steam \
- && chmod 755 /home/steam /home/steam/Steam /home/steam/.fex-emu \
- /home/steam/.fex-emu/RootFS /home/steam/.fex-emu/RootFS/Ubuntu_22_04 \
+# SteamCMD updates its own files, so move the base image's trees into the
+# runtime user's home and give tml ownership of the complete FEX environment.
+RUN mv /home/steam/Steam /home/tml/Steam \
+ && mv /home/steam/.fex-emu /home/tml/.fex-emu \
+ && chown -R tml:tml /home/tml/Steam /home/tml/.fex-emu \
+ && chmod 755 /home/tml /home/tml/Steam /home/tml/.fex-emu \
+ /home/tml/.fex-emu/RootFS /home/tml/.fex-emu/RootFS/Ubuntu_22_04 \
  && printf '%s\n' '#!/bin/sh' 'cd /home/tml/Steam || exit 1' 'exec FEXBash ./steamcmd.sh "$@"' \
 	> /usr/local/bin/steamcmd \
  && chmod 755 /usr/local/bin/steamcmd
@@ -48,7 +48,7 @@ USER tml
 ENV USER=tml
 ENV HOME=/home/tml
 # FEX uses the root filesystem supplied by the ARM64 base image.
-ENV FEX_ROOTFS=/home/steam/.fex-emu/RootFS/Ubuntu_22_04
+ENV FEX_ROOTFS=/home/tml/.fex-emu/RootFS/Ubuntu_22_04
 WORKDIR $HOME
 
 # Keep runtime scripts outside the tModLoader data directory. The latter is
