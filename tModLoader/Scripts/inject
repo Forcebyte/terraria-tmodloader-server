@@ -1,2 +1,2 @@
 #!/bin/bash
-tmux send-keys -t tml "$1" Enter
+printf '%s\n' "$1" > /tmp/tml-console

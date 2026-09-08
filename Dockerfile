@@ -7,7 +7,6 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends \
 	 bash \
 	 curl \
-	 tmux \
 	 unzip \
 	 libstdc++6 \
 	 libgcc-s1 \

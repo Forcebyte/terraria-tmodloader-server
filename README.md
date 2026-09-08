@@ -166,11 +166,11 @@ _Note: the description and possible values of these variables are described in t
 
 You can create a new world or select different world served by a container by attaching to it. Make sure no Environment variables are used. Delete or comment the `environment:` section of the docker-compose.yml file.
 
-`docker exec -it <container-name> tmux a`
+Use the `inject` helper to send server commands:
 
-if you used the docker-compose.yml provided, the container name is 'tml'. You can then use
+`docker exec <container-name> inject "help"`
 
-`docker exec -it tml tmux a`
+if you used the docker-compose.yml provided, the container name is `tml`.
 
 - press enter
 - Go through the options
@@ -270,7 +270,7 @@ _Note: These are case-sensitive!_
 
 - If the `WORLD` variable is left empty or not included, the server will need to be initialized manually after the container is spun up. You will need to attach to the container and select/create a world and set the players number, port and password manually. If you create a new world, it will be saved in the path defined by the environment variable `worldpath`.
 
-1.  `docker exec -it <container-name> tmux a`
+1.  `docker exec <container-name> inject "help"`
 2.  press _*enter*_
 3.  Go through the options
 4.  Detach from the container by pressing `ctrl+b` + `d`
@@ -287,7 +287,7 @@ _Note: These are case-sensitive!_
 
 Once a server is running, the following commands can be run. More info on the [Terraria Server Wiki](https://terraria.fandom.com/wiki/Server#Server_files)\
 You can either attach to the container or inject a command.
-1. To attach to the container, use `docker exec -it <container-name> tmux a`.
+1. To send a command, use `docker exec <container-name> inject "command"`.
 
 2. To inject a command, from the command line, use `docker exec <container-name> inject "command"`.
 For example, to send a message to everyone on the server:
