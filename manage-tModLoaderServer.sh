@@ -279,12 +279,18 @@ function install_workshop_mods {
 		steamcmd_command="$steamcmd_command +workshop_download_item 1281930 $line"
 	done
 
-	eval "$steam_cmd +force_install_dir $folder +login anonymous $steamcmd_command +quit"
-	if [[ $? -ne 0 ]]; then
-		echo "SteamCMD failed while installing workshop mods" >&2
+	steamcmd_log="$folder/steamcmd-workshop.log"
+	eval "$steam_cmd +force_install_dir $folder +login anonymous $steamcmd_command +quit" > "$steamcmd_log" 2>&1
+	steamcmd_exit_code=$?
+	if [[ $steamcmd_exit_code -ne 0 ]]; then
+		echo "SteamCMD failed while installing workshop mods (exit code: $steamcmd_exit_code)" >&2
+		echo "--- SteamCMD output ---" >&2
+		cat "$steamcmd_log" >&2
+		echo "--- End SteamCMD output ---" >&2
 		popd
 		return 1
 	fi
+	rm -f "$steamcmd_log"
 
 	popd
 
