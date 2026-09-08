@@ -1,116 +1,111 @@
-```
- __  __     ______     __  __     __         ______
-/\ \_\ \   /\  ___\   /\_\_\_\   /\ \       /\  __ \
-\ \  __ \  \ \  __\   \/_/\_\/_  \ \ \____  \ \ \/\ \
- \ \_\ \_\  \ \_____\   /\_\/\_\  \ \_____\  \ \_____\
-  \/_/\/_/   \/_____/   \/_/\/_/   \/_____/   \/_____/
-```
+<div align="center">
 
-<br>
+# tModLoader Server
 
-# tModLoader 1.4.4 Server as a Docker image
+<p><i>Run a persistent Terraria tModLoader 1.4.4 server in Docker, including ARM64 hosts.</i></p>
 
-<br>
-
-<p style="color:#0078d7; font-family: Consolas">
-  <ins> Docker Hub image: </ins>
+<p>
+  <a href="https://github.com/tModLoader/tModLoader">tModLoader 1.4.4</a> ·
+  <a href="https://www.terraria.org/">Terraria</a> ·
+  <a href="https://www.docker.com/">Docker</a>
 </p>
 
+</div>
+
+## What is this?
+
+This repository is an ARM-focused fork of [hexlo/terraria-tmodloader-server](https://github.com/hexlo/terraria-tmodloader-server). It packages a dedicated [tModLoader](https://github.com/tModLoader/tModLoader) server for Docker and keeps the server data in a bind-mounted directory so worlds, mods, and configuration survive rebuilds.
+
+The image is based on an ARM64 SteamCMD image and uses its FEX/Ubuntu runtime to provide the compatibility layer required by the x86 tModLoader server binaries. The image can be built for ARM64 hosts such as Ampere and other aarch64 systems.
+
+## Requirements
+
+### Host
+
+- Docker Engine
+- Docker Compose v2 (`docker compose`)
+- An ARM64/aarch64 host for the ARM build
+
+### Client
+
+- Terraria 1.4.4 or newer
+- tModLoader 1.4.4 or newer
+- The same mods enabled as the server
+
+## Quick start
+
+Clone the repository and create a Compose file from the example:
+
+```sh
+git clone https://github.com/forcebyte/terraria-tmodloader-server.git
+cd terraria-tmodloader-server
+cp docker-compose-example.yml docker-compose.yml
 ```
-hexlo/terraria-tmodloader-server:latest
+
+Edit `docker-compose.yml`, then build and start the server:
+
+```sh
+docker compose build
+docker compose up -d
 ```
-<br>
 
----
+The example publishes host port `7785` to the server's container port `7777`. Change the host-side port if needed.
 
-<br>
+The server data is stored in `./tModLoader` and mounted at `/home/tml/.local/share/Terraria/tModLoader` in the container. The container runs as the UID and GID supplied through the Docker build arguments, which should match the owner of the mounted directory.
 
-**Also available: [Vanilla Terraria Multi-Arch Server (amd64 and arm64)](https://github.com/hexlo/terraria-server-docker) ===> Dockerhub image:** `hexlo/terraria-server-docker:latest`
+### Published image
 
-<br>
+A rolling image is published to the [GitHub Container Registry package](https://github.com/Forcebyte/terraria-tmodloader-server/pkgs/container/terraria-tmodloader-server). Use the published image when you do not want to build locally:
 
----
-
-<br>
-
-
-
-
-
-
-
-
-
-## <ins> **Requirements** </ins>
-
-**_Server-side:_**
-
-- Docker
-- docker compose
-
-**_Client-side:_**
-
-- Terraria 1.4.4 or Greater
-- tModLoader 1.4.4 or Greater
-
-<br>
-
----
-
-<br>
-
-## <ins> **General Config** </ins>
-
-- Clone this repository
-- Create a `docker-compose.yml` file (see example below).  
-You can otherwise rename `docker-compose-example.yml` to `docker-compose.yml` and modify it.
-- Edit the environment variables as you see fit. They are explained in a table further down.
-- In the tModLoader/Mods directory, edit the install.txt and enabled.json to include the mods you want. Check below for examples.
-- This image uses Environment Variables to setup the server configuration file. You can instead use a serverconfig.txt file to overwrite this behavior if you wish. You need to set (uncomment) the `USE_CONFIG_FILE=1`
-variable in the Dockerfile file.
-<br>
-
-## <ins> **Generating your World** </ins>
-
-The easiest way to generate a world is to use certain Environment Variables to autocreate a world on container startup. Here are the variables required to do so:
-
-- AUTOCREATE=1
-- WORLDNAME=YourWorld.wld
-- DIFFICULTY=1
-
-All the variables are explained in the [Environment Variables](#environment-variables) section below.
-
-### **_docker-compose.yml example:_**
-
+```yaml
+image: ghcr.io/forcebyte/terraria-tmodloader-server:latest
 ```
+
+The published image currently follows a rolling release model. If stable semantic version tags are needed, open a [GitHub issue](https://github.com/Forcebyte/terraria-tmodloader-server/issues) to request semantic versioning support.
+
+### ARM64 build
+
+On an ARM64 host, the default build is sufficient:
+
+```sh
+docker compose build --no-cache
+```
+
+To build explicitly for ARM64 with Buildx:
+
+```sh
+docker buildx build --platform linux/arm64 -t terraria-tmodloader-server:arm64 .
+```
+
+## Docker Compose configuration
+
+The smallest useful configuration points Docker at the persistent data directory and supplies a world-generation configuration:
+
+```yaml
 services:
   tml:
     container_name: tml
-    #restart: unless-stopped
+    restart: unless-stopped
     build:
       context: .
       args:
         UID: 1000
         GID: 1000
-        #TML_VERSION: v2023.8.3.3
-    #entrypoint: [ "/bin/bash" ] # Uncomment this line if you need to poke around in the container
     tty: true
     stdin_open: true
     ports:
-      - 7785:7777
+      - "7785:7777"
     volumes:
       - ./tModLoader:/home/tml/.local/share/Terraria/tModLoader
     environment:
       - AUTOCREATE=1
-      - WORLDNAME=tmlCalamity1.wld
+      - WORLDNAME=tmlWorld.wld
       - DIFFICULTY=1
-      # - WORLD=/home/tml/.local/share/Terraria/tModLoader/Worlds/tmlCalamity1.wld
-      - PASSWORD=passworld
-      - MOTD="Welcome to my tModLoader Server :)"
+      - PASSWORD=change-me
+      - MOTD=Welcome to my tModLoader server
 ```
 
-For a Kubernetes or k3s deployment, run the container with the same numeric
-identity used when building the image and make the mounted volume group-writable:
+For Kubernetes or k3s, run the container with the same numeric identity used during the image build and make the mounted volume group-writable:
 
 ```yaml
 securityContext:
@@ -120,208 +115,212 @@ securityContext:
   fsGroupChangePolicy: OnRootMismatch
 ```
 
-The data volume is mounted at `/home/tml/.local/share/Terraria/tModLoader`.
-Without `fsGroup` (or an equivalent init container), a PVC initialized as root
-can prevent tModLoader from writing `Mods/enabled.json`.
+Without an appropriate `fsGroup` or init-container ownership fix, a PVC initialized as root can prevent tModLoader from writing `Mods/enabled.json`.
 
-- Launch the container. If you are using a command line interface (cli):  
-  `docker-compose up -d`
+### Kubernetes example
 
-<br>
+A complete Calamity deployment is available in [`examples/kubernetes/terraria-calamity`](examples/kubernetes/terraria-calamity). It includes:
 
----
+- A 20 GiB `PersistentVolumeClaim` for worlds and server data
+- A `ConfigMap` for `Mods/install.txt` and `Mods/enabled.json`
+- An init container that copies the mod configuration and fixes volume ownership
+- A non-root tModLoader Deployment and internal TCP Service
+- A NetworkPolicy allowing Terraria traffic and required outbound access
 
-<br>
+Before applying it, update the image reference and replace the placeholder password in [`secret.yaml`](examples/kubernetes/terraria-calamity/secret.yaml). The example assumes a cluster StorageClass can provision a `ReadWriteOnce` volume:
 
-## <ins> **Creating and using Worlds** </ins>
-
-### **_Using existing worlds_**
-
-Terraria tModloader worlds are comprised of two files: a `.wld` and a `.twld`  
-If you have a Terraria tModloader compatible world already, you can simply put the two files in the `Worlds` directory.
-
-### **_Creating a new world_**
-
-There is two ways to create a new world.
-
-1. Using variables in the `docker-compose.yml` file (recommended)
-2. By spinning a container, manually attaching to it and going through the command prompts of the terraria server.
-
-### <ins> 1. Using variables in the docker-compose.yml file: </ins>
-
-You need to set certain variables in the `environment:` part of the docker-compose.yml file, as follows:
-
-```
-...
-    environment:
-      - AUTOCREATE=1
-      - WORLDNAME=tmlCalamity1.wld
-      - DIFFICULTY=1
-...
+```sh
+kubectl apply -k examples/kubernetes/terraria-calamity
 ```
 
-_Note: the description and possible values of these variables are described in the [Environment Variables](#environment-variables) section below_
+The included `ingressroute-tcp.yaml` is optional and is not enabled by default. If Traefik TCP passthrough is installed, add it to the Kustomization resources and configure the `terraria` entrypoint on your Traefik instance.
 
-### <ins> 2. Manually create a world: </ins>
+### Regenerate a world
 
-You can create a new world or select different world served by a container by attaching to it. Make sure no Environment variables are used. Delete or comment the `environment:` section of the docker-compose.yml file.
+The Kubernetes example starts in persistent-world mode. To deliberately discard `Calamity.wld` and generate a fresh large expert world, run the following from the repository root:
 
-Use the `inject` helper to send server commands:
+```sh
+NS=terraria-calamity
+DEPLOY=terraria-calamity
 
-`docker exec <container-name> inject "help"`
+# Stop the server before touching the PVC.
+kubectl scale deployment "$DEPLOY" -n "$NS" --replicas=0
+kubectl wait --for=delete pod -l app=terraria-calamity -n "$NS" --timeout=180s
 
-if you used the docker-compose.yml provided, the container name is `tml`.
+# Permanently delete the current world files from the PVC.
+kubectl run terraria-world-cleaner -n "$NS" \
+  --image=alpine:3.20 \
+  --restart=Never \
+  --overrides='{
+    "spec": {
+      "containers": [{
+        "name": "cleaner",
+        "image": "alpine:3.20",
+        "command": ["sh", "-c", "rm -f /data/Worlds/Calamity.wld /data/Worlds/Calamity.twld"],
+        "volumeMounts": [{"name": "data", "mountPath": "/data"}]
+      }],
+      "volumes": [{
+        "name": "data",
+        "persistentVolumeClaim": {"claimName": "terraria-calamity-data"}
+      }]
+    }
+  }'
 
-- press enter
-- Go through the options
+kubectl wait --for=jsonpath='{.status.phase}'=Succeeded \
+  pod/terraria-world-cleaner -n "$NS" --timeout=120s
+kubectl delete pod terraria-world-cleaner -n "$NS"
 
-To dettach without stopping the container:
-`ctrl+b` + `d`
-
-<br>
-
-### **Important!**
-
-If you want the server to start automatically on subsequent runs, you need to provide a world path to an existing world, by defining the environment variable `world`. You can also safely remove the variables used to autocreate your world. Here is an example of the `environment:` section:
-
+# Enable world generation and start the server.
+kubectl set env deployment/"$DEPLOY" -n "$NS" \
+  WORLD- AUTOCREATE=3 WORLDNAME=Calamity.wld DIFFICULTY=1
+kubectl scale deployment "$DEPLOY" -n "$NS" --replicas=1
+kubectl rollout status deployment/"$DEPLOY" -n "$NS"
 ```
-    environment:
-      - WORLD=/home/tml/.local/share/Terraria/tModLoader/Worlds/tmlCalamity1.wld
-      - PASSWORD=passworld
-      - MOTD="Welcome to my tModLoader Server :)"
+
+Wait until the server has finished generating the world, then switch back to persistent-world mode:
+
+```sh
+kubectl scale deployment "$DEPLOY" -n "$NS" --replicas=0
+kubectl wait --for=delete pod -l app=terraria-calamity -n "$NS" --timeout=180s
+
+kubectl set env deployment/"$DEPLOY" -n "$NS" \
+  WORLD=/home/tml/.local/share/Terraria/tModLoader/Worlds/Calamity.wld \
+  AUTOCREATE- WORLDNAME- DIFFICULTY-
+kubectl scale deployment "$DEPLOY" -n "$NS" --replicas=1
+kubectl rollout status deployment/"$DEPLOY" -n "$NS"
 ```
 
-<br>
+The cleaner command permanently deletes the existing `.wld` and `.twld` files. Confirm the PVC and filenames before running it, and take a backup if the old world may be needed later.
 
----
+## Worlds
 
-<br>
+### Create a world automatically
 
-## <ins> **Mods** </ins>
+Set these environment variables in `docker-compose.yml`:
 
-You can install Mods by providing Steam Workshop IDs in the `install.txt` file located in `tModLoader/Mods/install.txt`. You can find the Mod ID in the URL of the Mod. For example, the [Calamity Mod](https://steamcommunity.com/sharedfiles/filedetails/?id=2824688072)'s ID is **2824688072**. 
-
-*install.txt* example:
+```yaml
+environment:
+  - AUTOCREATE=1
+  - WORLDNAME=tmlWorld.wld
+  - DIFFICULTY=1
 ```
+
+`DIFFICULTY` accepts `0` for normal, `1` for expert, `2` for master, and `3` for journey. Set `SEED` to choose a specific world seed.
+
+### Use an existing world
+
+Set `WORLD` to the full path inside the container:
+
+```yaml
+environment:
+  - WORLD=/home/tml/.local/share/Terraria/tModLoader/Worlds/tmlWorld.wld
+  - PASSWORD=change-me
+```
+
+Worlds consist of matching `.wld` and `.twld` files. Place both files in `tModLoader/Worlds` before starting the container.
+
+### Create a world interactively
+
+Remove the automatic world variables, start the container, and use the included `inject` helper:
+
+```sh
+docker compose up -d
+docker exec tml inject "help"
+```
+
+Follow the server prompts. The world is saved in the mounted `Worlds` directory and can be selected later using `WORLD`.
+
+## Mods
+
+Mods are managed in `tModLoader/Mods`:
+
+- `install.txt` contains one Steam Workshop ID per line.
+- `enabled.json` contains the exact mod names to enable.
+
+Example `install.txt`:
+
+```text
 2824688072
 2824688266
 2909886416
-2619954303
-2669644269
-2570931073
-2815540735
-3044249615
-2599842771
-2802867430
 ```
 
-To enable or disable mods on the server, modify the `enabled.json` file located in `tModLoader/Mods/enabled.json` with the names of the mods. Some mods may clash with each others, especially big content mods. Refer to the mod's wiki for more info.
+Example `enabled.json`:
 
-<ins>*enabled.json* example: </ins>
-
-```
+```json
 [
   "CalamityMod",
   "CalamityModMusic",
-  "BossChecklist",
-  "RecipeBrowser"
+  "BossChecklist"
 ]
 ```
 
-_Notes; The array of mod's names need the following properties:_
+Mod names are case-sensitive and must match the names provided by tModLoader. The server and every client must use compatible versions of the enabled mods.
 
-- The mod's names are exactly as they appear in the list above
-- The mod's names are in double quote
-- They are separated with a comma
-- There needs to be no trailing comma after the last item in the array
-  <br>
+## Environment variables
 
-The *install.txt* and *enabled.json* files need to be modidied before building the image.
+Variable names are case-sensitive.
 
+| Variable | Default | Description |
+| --- | --- | --- |
+| `WORLD` | empty | Full path to an existing world inside the container. |
+| `AUTOCREATE` | `1` | World size when creating a world: `1` small, `2` medium, `3` large. |
+| `SEED` | empty | Seed used with automatic world creation. |
+| `WORLDNAME` | `tmlWorld.wld` | World filename used with automatic creation. |
+| `DIFFICULTY` | `1` | `0` normal, `1` expert, `2` master, `3` journey. |
+| `MAXPLAYERS` | `16` | Maximum number of connected players. |
+| `PORT` | `7777` | Internal server port. Keep this aligned with the container port mapping. |
+| `PASSWORD` | empty | Server password. |
+| `MOTD` | empty | Message shown when players join. |
+| `WORLDPATH` | `/home/tml/.local/share/Terraria/tModLoader/Worlds/` | Directory for world files. |
+| `BANLIST` | `banlist.txt` | Ban list path. |
+| `SECURE` | `0` | Set to `1` to prevent cheats. |
+| `LANGUAGE` | `en/US` | Server language code. |
+| `UPNP` | `1` | Enable or disable UPnP. |
+| `NPCSTREAM` | `1` | NPC stream setting; higher values reduce skipping at the cost of bandwidth. |
+| `PRIORITY` | empty | Server process priority. |
+| `USE_CONFIG_FILE` | unset | Set to `1` to use the mounted `serverconfig.txt` instead of generated settings. |
 
+> [!IMPORTANT]
+> The generated configuration is written to `tModLoader/serverconfig.txt` on startup. If `WORLD` is empty, the server creates or selects a world using `AUTOCREATE`, `WORLDNAME`, `DIFFICULTY`, and `SEED`.
 
+## Server commands
 
-## <ins> **_Environment Variables_** </ins>
+Send commands to a running server without attaching to its console:
 
-_Note: These are case-sensitive!_
-
-| Env variable |            Default value             | Description                                                                                                                                                                                                                           | Example                                                                                                                                |
-| :----------- | :----------------------------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------- |
-| `world`      |              (_empty_)               | Path to your world. _You need to provide a world for the server to start automatically_                                                                                                                                               | `world=/root/.local/share/Terraria/Worlds/My_World.wld`                                                                                |
-| `autocreate` |                 `2`                  | Creates a world if none is found in the path specified by -world. World size is specified by: 1(small), 2(medium), and 3(large).                                                                                                      | `autocreate=2`                                                                                                                         |
-| `seed`       |              (_empty_)               | Specifies the world seed when using -autocreate                                                                                                                                                                                       | `seed=someseed123`                                                                                                                     |
-| `worldname`  |              (_empty_)               | Sets the name of the world when using -autocreate.                                                                                                                                                                                    | `worldname=world1`                                                                                                                     |
-| `difficulty` |                 `0`                  | Sets world difficulty when using `autocreate`. Options: 0(normal), 1(expert), 2(master), 3(journey)                                                                                                                                   | `difficulty=1`                                                                                                                         |
-| `maxplayers` |                 `16`                 | The maximum number of players allowed                                                                                                                                                                                                 | `maxplayers=8`                                                                                                                         |
-| `port`       |                `7777`                | Port used internally by the terraria server. _You should not change this._                                                                                                                                                            | `port=8123`                                                                                                                            |
-| `password`   |              (_empty_)               | Set a password for the server                                                                                                                                                                                                         | `password=serverpassword`                                                                                                              |
-| `motd`       |              (_empty_)               | Set the server motto of the day text.                                                                                                                                                                                                 | `motd="Welcome to my private server! :)"`                                                                                              |
-| `worldpath`  | `/root/.local/share/Terraria/Worlds` | Sets the directory where world files will be stored                                                                                                                                                                                   | `worldpath=/some/other/dir`                                                                                                            |
-| `banlist`    |            `banlist.txt`             | The location of the banlist. Defaults to "banlist.txt" in the working directory.                                                                                                                                                      | `banlist=/configs/banlist.txt` -> this would imply that you mount your banlist.txt file in the container's path `/configs/banlist.txt` |
-| `secure`     |                 `1`                  | Option to prevent cheats. (1: no cheats or 0: cheats allowed)                                                                                                                                                                         | `secure=0`                                                                                                                             |
-| `language`   |               `en/US`                | Sets the server language from its language code. Available codes: `en/US = English` `de/DE = German` `it/IT = Italian` `fr/FR = French` `es/ES = Spanish` `ru/RU = Russian` `zh/Hans = Chinese` `pt/BR = Portuguese` `pl/PL = Polish` | `language=fr/FR`                                                                                                                       |
-| `upnp`       |                 `1`                  | Enables/disables automatic universal plug and play.                                                                                                                                                                                   | `upnp=0`                                                                                                                               |
-| `npcstream`  |                 `1`                  | Reduces enemy skipping but increases bandwidth usage. The lower the number the less skipping will happen, but more data is sent. 0 is off.                                                                                            | `npcstream=60`                                                                                                                         |
-| `priority`   |              (_empty_)               | Sets the process priority                                                                                                                                                                                                             | `priority=1`                                                                                                                           |
-
-<br>
-
-### <ins> **Important!** </ins>
-
-- If the `WORLD` variable is left empty or not included, the server will need to be initialized manually after the container is spun up. You will need to attach to the container and select/create a world and set the players number, port and password manually. If you create a new world, it will be saved in the path defined by the environment variable `worldpath`.
-
-1.  `docker exec <container-name> inject "help"`
-2.  press _*enter*_
-3.  Go through the options
-4.  Detach from the container by pressing `ctrl+b` + `d`
-
-- If, after creating your world with a specific seed, the server still doesn't initializes automatically, be sure to comment or remove the `seed=<yourseed>` variable in the docker-compose.yml file.
-
-<br>
-
----
-
-<br>
-
-## <ins> *Server console commands* </ins>
-
-Once a server is running, the following commands can be run. More info on the [Terraria Server Wiki](https://terraria.fandom.com/wiki/Server#Server_files)\
-You can either attach to the container or inject a command.
-1. To send a command, use `docker exec <container-name> inject "command"`.
-
-2. To inject a command, from the command line, use `docker exec <container-name> inject "command"`.
-For example, to send a message to everyone on the server:
-`docker exec tml inject "say Hello everyone!"`
-
+```sh
+docker exec tml inject "say Hello everyone!"
+docker exec tml inject "save"
+docker exec tml inject "playing"
 ```
 
-help - Displays a list of commands.
-playing - Shows the list of players. This can be used in-game by typing /playing into the chat.
-clear - Clear the console window.
-exit - Shutdown the server and save.
-exit-nosave - Shutdown the server without saving.
-save - Save the game world.
-kick <player name> - Kicks a player from the server.
-ban <player name> - Bans a player from the server.
-password - Show password.
-password <pass> - Change password.
-version - Print version number.
-time - Display game time.
-port - Print the listening port.
-maxplayers - Print the max number of players.
-say <message> - Send a message to all players. They will see the message in yellow prefixed with <server> in the chat.
-motd - Print MOTD.
-motd <message> - Change MOTD.
-dawn - Change time to dawn (4:30 AM).
-noon - Change time to noon (12:00 PM).
-dusk - Change time to dusk (7:30 PM).
-midnight - Change time to midnight (12:00 AM).
-settle - Settle all water.
+Useful commands include `help`, `playing`, `save`, `kick <player>`, `ban <player>`, `password <value>`, `motd <message>`, `time`, and `exit`.
 
-Banning and un-banning
-The command ban <player> will ban the indicated player from the server. A banned player, when they try to login, will be displayed the message:You are banned for [duration]: [reason]- [modname]. A banned player may then be un-banned by editing the file "banlist.txt," which is located in the Terraria folder. This document contains a list of all currently banned players. To un-ban a player, delete the player's name and IP address from the list.
+## Updating
 
+Rebuild the image to update the tModLoader installation and installed mods:
+
+```sh
+docker compose build --no-cache
+docker compose up -d
 ```
 
-_Note: no forward-slash `/` is needed before the command, as some command interfaces require._
+The `tModLoader` directory is mounted separately, so your worlds and server data remain outside the image.
 
+## Project layout
+
+```text
+.
+├── Dockerfile                    # ARM64-compatible server image
+├── docker-compose-example.yml    # Example deployment
+├── manage-tModLoaderServer.sh    # tModLoader installation and server utility
+├── examples/                     # Kubernetes deployment examples
+└── tModLoader/
+    ├── Mods/                     # Mod installation and enablement files
+    ├── Scripts/                  # Container startup and configuration scripts
+    └── Worlds/                   # Persistent world files
+```
+
+## Credits
+
+This project is based on [hexlo/terraria-tmodloader-server](https://github.com/hexlo/terraria-tmodloader-server), with ARM64 and extended Ubuntu compatibility work for ARM-based deployments.
