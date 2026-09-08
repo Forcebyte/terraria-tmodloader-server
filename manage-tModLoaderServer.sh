@@ -436,13 +436,18 @@ case $cmd in
 
 		cd "$folder/server" || exit
 		chmod u+x start-tModLoaderServer.sh
-		# The tModLoader launcher starts dotnet as its child. Run it in its own
-		# process group so Kubernetes termination can trigger a graceful save.
-		setsid ./start-tModLoaderServer.sh -config "$folder/serverconfig.txt" -nosteam -tmlsavedirectory "$folder" "$start_args" &
+		# Kubernetes does not provide an interactive console. Give the server a
+		# private stdin so termination can use tModLoader's save/exit commands.
+		shutdown_fifo=$(mktemp -u "$folder/.tml-console.XXXXXX")
+		mkfifo "$shutdown_fifo"
+		setsid ./start-tModLoaderServer.sh -config "$folder/serverconfig.txt" -nosteam -tmlsavedirectory "$folder" "$start_args" < "$shutdown_fifo" &
 		server_pid=$!
+		exec 3>"$shutdown_fifo"
+		rm -f "$shutdown_fifo"
 		function stop_server {
-			kill -INT -- "-$server_pid" 2>/dev/null || kill -INT "$server_pid" 2>/dev/null
+			printf 'save\nexit\n' >&3 2>/dev/null || true
 			wait "$server_pid"
+			exec 3>&-
 			exit $?
 		}
 		trap stop_server TERM INT
