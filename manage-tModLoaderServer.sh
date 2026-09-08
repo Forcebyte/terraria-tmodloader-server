@@ -282,8 +282,16 @@ function install_workshop_mods {
 	steamcmd_input+="quit\n"
 
 	steamcmd_log="$folder/steamcmd-workshop.log"
-	printf '%b' "$steamcmd_input" | "$steam_cmd" -nobootstrapupdate > "$steamcmd_log" 2>&1
-	steamcmd_exit_code=$?
+	steamcmd_attempt=1
+	while true; do
+		printf '%b' "$steamcmd_input" | "$steam_cmd" -nobootstrapupdate > "$steamcmd_log" 2>&1
+		steamcmd_exit_code=$?
+		if [[ $steamcmd_exit_code -ne 42 || $steamcmd_attempt -ge 2 ]]; then
+			break
+		fi
+		echo "SteamCMD requested a restart; retrying workshop installation" >&2
+		steamcmd_attempt=$((steamcmd_attempt + 1))
+	done
 	if [[ $steamcmd_exit_code -ne 0 ]]; then
 		echo "SteamCMD failed while installing workshop mods (exit code: $steamcmd_exit_code)" >&2
 		echo "--- SteamCMD output ---" >&2
