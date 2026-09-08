@@ -33,10 +33,14 @@ RUN existing_group=$(getent group "$GID" | cut -d: -f1) \
 		fi
 
 # The ARM64 base image provides SteamCMD through FEXBash under /home/steam.
-# Make the base image's Steam files readable by the runtime user.
-RUN chmod 755 /home/steam /home/steam/Steam /home/steam/.fex-emu \
+# SteamCMD updates its own files, so expose that tree through the runtime user's
+# home and give the runtime user ownership of the mutable Steam files.
+RUN ln -s /home/steam/Steam /home/tml/Steam \
+ && ln -s /home/steam/.fex-emu /home/tml/.fex-emu \
+ && chown -R tml:tml /home/steam/Steam \
+ && chmod 755 /home/steam /home/steam/Steam /home/steam/.fex-emu \
  /home/steam/.fex-emu/RootFS /home/steam/.fex-emu/RootFS/Ubuntu_22_04 \
- && printf '%s\n' '#!/bin/sh' 'cd /home/steam/Steam || exit 1' 'HOME=/home/steam exec FEXBash ./steamcmd.sh "$@"' \
+ && printf '%s\n' '#!/bin/sh' 'cd /home/tml/Steam || exit 1' 'exec FEXBash ./steamcmd.sh "$@"' \
 	> /usr/local/bin/steamcmd \
  && chmod 755 /usr/local/bin/steamcmd
 
