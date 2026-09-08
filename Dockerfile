@@ -40,7 +40,7 @@ RUN mv /home/steam/Steam /home/tml/Steam \
  && chown -R tml:tml /home/tml/Steam /home/tml/.fex-emu \
  && chmod 755 /home/tml /home/tml/Steam /home/tml/.fex-emu \
  /home/tml/.fex-emu/RootFS /home/tml/.fex-emu/RootFS/Ubuntu_22_04 \
- && printf '%s\n' '#!/bin/sh' 'cd /home/tml/Steam || exit 1' 'DEBUGGER=FEXBash exec FEXBash ./steamcmd.sh -nobootstrapupdate "$@"' \
+ && printf '%s\n' '#!/bin/sh' 'cd /home/tml/Steam || exit 1' 'exec FEXBash ./linux32/steamcmd -nobootstrapupdate "$@"' \
 	> /usr/local/bin/steamcmd \
  && chmod 755 /usr/local/bin/steamcmd
 

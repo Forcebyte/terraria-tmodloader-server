@@ -273,14 +273,16 @@ function install_workshop_mods {
 
 	echo "Installing workshop mods"
 
-	local steamcmd_command
+	local steamcmd_input
+	steamcmd_input=$(printf 'force_install_dir %s\nlogin anonymous\n' "$folder")
 	lines=$(cat install.txt)
 	for line in $lines; do
-		steamcmd_command="$steamcmd_command +workshop_download_item 1281930 $line"
+		steamcmd_input+="workshop_download_item 1281930 $line\n"
 	done
+	steamcmd_input+="quit\n"
 
 	steamcmd_log="$folder/steamcmd-workshop.log"
-	eval "$steam_cmd +force_install_dir $folder +login anonymous $steamcmd_command +quit" > "$steamcmd_log" 2>&1
+	printf '%b' "$steamcmd_input" | "$steam_cmd" -nobootstrapupdate > "$steamcmd_log" 2>&1
 	steamcmd_exit_code=$?
 	if [[ $steamcmd_exit_code -ne 0 ]]; then
 		echo "SteamCMD failed while installing workshop mods (exit code: $steamcmd_exit_code)" >&2
