@@ -12,6 +12,17 @@ jobs:
   super-linter:
     name: Super-Linter
     runs-on: ubuntu-latest
+    permissions:
+      # contents permission to clone the repository
+      contents: read
+      packages: read
+      # issues and pull-requests permissions to write results as pull
+      # request comments. Omit them if you don't need summary comments
+      issues: write
+      pull-requests: write
+      # To report GitHub Actions status checks. Omit if you don't need
+      # to update commit status
+      statuses: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -33,6 +44,9 @@ jobs:
   kustomize:
     name: Kustomize Build
     runs-on: ubuntu-latest
+    permissions:
+      # contents permission to clone the repository
+      contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
