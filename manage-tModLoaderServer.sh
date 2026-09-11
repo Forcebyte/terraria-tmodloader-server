@@ -273,33 +273,35 @@ function install_workshop_mods {
 
 	echo "Installing workshop mods"
 
-	local steamcmd_input
-	steamcmd_input=$(printf 'force_install_dir %s\nlogin anonymous\n' "$folder")
-	lines=$(cat install.txt)
-	for line in $lines; do
-		steamcmd_input+="workshop_download_item 1281930 $line\n"
-	done
-	steamcmd_input+="quit\n"
-
-	steamcmd_log="$folder/steamcmd-workshop.log"
-	steamcmd_attempt=1
-	while true; do
-		printf '%b' "$steamcmd_input" | "$steam_cmd" -nobootstrapupdate > "$steamcmd_log" 2>&1
-		steamcmd_exit_code=$?
-		if [[ $steamcmd_exit_code -ne 42 || $steamcmd_attempt -ge 2 ]]; then
-			break
+	local workshop_dir="$folder/steamapps/workshop/content/1281930"
+	local steamcmd_log="$folder/steamcmd-workshop.log"
+	local mod_id
+	local steamcmd_exit_code
+	local steamcmd_attempt
+	while IFS= read -r mod_id || [[ -n "$mod_id" ]]; do
+		mod_id="${mod_id//$'\r'/}"
+		[[ -z "$mod_id" ]] && continue
+		steamcmd_attempt=1
+		while true; do
+			printf 'force_install_dir %s\nlogin anonymous\nworkshop_download_item 1281930 %s\nquit\n' \
+				"$folder" "$mod_id" | "$steam_cmd" -nobootstrapupdate > "$steamcmd_log" 2>&1
+			steamcmd_exit_code=$?
+			if [[ $steamcmd_exit_code -ne 42 || $steamcmd_attempt -ge 2 ]]; then
+				break
+			fi
+			echo "SteamCMD requested a restart for Workshop item $mod_id; retrying" >&2
+			steamcmd_attempt=$((steamcmd_attempt + 1))
+		done
+		if [[ $steamcmd_exit_code -ne 0 || ! -d "$workshop_dir/$mod_id" ]]; then
+			echo "SteamCMD failed while installing Workshop item $mod_id" >&2
+			echo "--- SteamCMD output ---" >&2
+			cat "$steamcmd_log" >&2
+			echo "--- End SteamCMD output ---" >&2
+			rm -f "$steamcmd_log"
+			popd
+			return 1
 		fi
-		echo "SteamCMD requested a restart; retrying workshop installation" >&2
-		steamcmd_attempt=$((steamcmd_attempt + 1))
-	done
-	if [[ $steamcmd_exit_code -ne 0 ]]; then
-		echo "SteamCMD failed while installing workshop mods (exit code: $steamcmd_exit_code)" >&2
-		echo "--- SteamCMD output ---" >&2
-		cat "$steamcmd_log" >&2
-		echo "--- End SteamCMD output ---" >&2
-		popd
-		return 1
-	fi
+	done < install.txt
 	rm -f "$steamcmd_log"
 
 	popd
